@@ -15,6 +15,9 @@ import net.java.games.input.EventQueue;
 import javax.sound.midi.*;
 import javax.sound.midi.MidiDevice.Info;
 
+/* ****************** *
+ * 		NOT USED!!!
+ * ****************** */
 public class PedalController2 extends Thread {  
 	
 	private class ControllerDevice {

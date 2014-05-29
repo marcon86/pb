@@ -1,16 +1,19 @@
 package compactController;
 
-import javax.swing.JButton;
+import javax.sound.midi.InvalidMidiDataException;
+import javax.sound.midi.MidiDevice;
+import javax.sound.midi.MidiDevice.Info;
+import javax.sound.midi.MidiSystem;
+import javax.sound.midi.MidiUnavailableException;
+import javax.sound.midi.ShortMessage;
 import javax.swing.JCheckBox;
 import javax.swing.JToggleButton;
 
 import net.java.games.input.Component;
+import net.java.games.input.Controller;
 import net.java.games.input.ControllerEnvironment;
 import net.java.games.input.Event;
 import net.java.games.input.EventQueue;
-
-import javax.sound.midi.*;
-import javax.sound.midi.MidiDevice.Info;
 
 public class PedalController extends Thread {  
 
@@ -19,6 +22,9 @@ public class PedalController extends Thread {
 	public final static int MIDI_SEND = 2;
 	public final static int MIDI_NAME = 3;
 	public final static int MIDI_STATUS = 4;
+	
+	public final static int MIDI_TRUE = 127;
+	public final static int MIDI_FALSE = 0;
 
 	private final int CHANNEL = 2;
 	
@@ -106,8 +112,8 @@ public class PedalController extends Thread {
 	}
 	
 	private int translate(boolean val) {
-		if(val) return 127;
-		else	return 0;
+		if(val) return MIDI_TRUE;
+		else	return MIDI_FALSE;
 	}
 	
 	public void reset() {
@@ -130,7 +136,7 @@ public class PedalController extends Thread {
 		return (Boolean) manageMidi(MIDI_SEND,null,m);
 	}
 	
-	public int getIndex(Component button) {
+	public int getComponentIndex(Component button) {
 		//sarebbe meglio farlo con delle hashmap
 		String name = button.getIdentifier().toString();
 		
@@ -241,100 +247,92 @@ public class PedalController extends Thread {
 	
 	public void run() {
 		
-		net.java.games.input.Controller[] cs = 
-			ControllerEnvironment.getDefaultEnvironment().getControllers();
-		
-		net.java.games.input.Controller pad = null;
-		
-		for(int i = 0 ; i<cs.length;i++)
-			System.out.println(cs[i].getName());
-		// cerco la pedaliera
-		{
-    		int i=0;
-    		boolean found = false;
-    		while (i<cs.length && !found) {
-    			if(cs[i].getType().toString().equalsIgnoreCase("Stick")) {
-    				found = true;
-    				pad = cs[i];
-    			}else
-    				i++;
-    		}
-		}
+		Controller pad = this.getDeviceController();
 		if(pad == null) {
 			lock(true,"PeDaLiera NON TROVATA");
 			return;
 		}
 
-//////////////////////////////
-//////////////////////////////
 //		if(getMidiOut() == null) setMidiOut("Bus 1");
-		
-//////////////////////////////
-//////////////////////////////
 		
 		// -------------- //
 		System.out.println(pad.getName() + ", " + pad.getType());
 		System.out.println("--------------------------");
 
+		/* Ripulisco gli eventi dagli errori analogici iniziali */
+		this.clearControllerEventQueue(pad);
 
-		EventQueue queue = pad.getEventQueue();
+		EventQueue evQueue = pad.getEventQueue();
 		Event event = new Event();
-		
-/* Ripulisco gli eventi dagli errori analogici iniziali */
-		pad.poll();
-		while(queue.getNextEvent(event));
-/*             ****************************             */
-		/*
-		 * INIZIO MONITORAGGIO
-		 */
 		while (true) {
-			//prendo l'identifier e non il nome perchè più portabile
-			// su windows il nome cambia anche con la lingua del sistema
+
 			if(pad.poll() == false) {
-				lock(true,null);
+				this.lock(true,null);
 				break;
 			}
-	//		pad.poll();
-			while (queue.getNextEvent(event)) {
-				
-				StringBuffer buffer = new StringBuffer();
-				Component comp = event.getComponent();
-				buffer.append(comp.getIdentifier().toString()).append(" -> ");
-				float value = event.getValue();
-				int i = getIndex(comp)-1;
 
-				if(i!=-1) {
-					// ON
-					if ( (comp.isAnalog() && value == -1.0f) ||
-						 (!comp.isAnalog() && value == 1.0f) ) { 
-						// buffer.append(value);
-						buffer.append((i+1)+" --:> ON");
-						if(toggle[i].isSelected()) {
-							this.value[i] = !this.value[i];
-							button[i].setSelected(this.value[i]);
-							sendMidi(i,this.value[i]);
-						}else {
-							button[i].setSelected(true);
-							sendMidi(i,true);
-							if(reset[i].isSelected())
-								reset();
-						}
-					// OFF
-					} else {
-						buffer.append("Off");
-						if(toggle[i].isSelected() == false){
-							button[i].setSelected(false);
-							sendMidi(i,false);
-						}
-					}
-					System.out.println(buffer.toString());
-				}else
-					System.err.println("not recognized!");
-			}
+			while (evQueue.getNextEvent(event))
+				this.handleDeviceEvent(event);
 
 			try {
 				Thread.sleep(SLEEP_TIME);
 			} catch (InterruptedException e) {}
 		}
+	}
+
+	private void clearControllerEventQueue(Controller pad) {
+		Event evt = new Event();
+
+		EventQueue q = pad.getEventQueue();
+		pad.poll();
+		while(q.getNextEvent(evt));
+	}
+
+	private void handleDeviceEvent(Event event) {
+		StringBuffer buffer = new StringBuffer();
+		Component comp = event.getComponent();
+		buffer.append(comp.getIdentifier().toString()).append(" -> ");
+		float value = event.getValue();
+		int i = getComponentIndex(comp)-1;
+
+		if(i!=-1) {
+			// ON
+			if ( (comp.isAnalog() && value == -1.0f) || (!comp.isAnalog() && value == 1.0f) ) { 
+				// buffer.append(value);
+				buffer.append((i+1)+" --:> ON");
+				if(toggle[i].isSelected()) {
+					this.value[i] = !this.value[i];
+					button[i].setSelected(this.value[i]);
+					sendMidi(i,this.value[i]);
+				}else {
+					button[i].setSelected(true);
+					sendMidi(i,true);
+					if(reset[i].isSelected())
+						reset();
+				}
+			// OFF
+			} else {
+				buffer.append("Off");
+				if(toggle[i].isSelected() == false){
+					button[i].setSelected(false);
+					sendMidi(i,false);
+				}
+			}
+			System.out.println(buffer.toString());
+		}else
+			System.err.println("not recognized!");
+	}
+
+	private Controller getDeviceController() {
+		Controller[] cs = ControllerEnvironment.getDefaultEnvironment().getControllers();
+		
+		for(Controller c : cs) {
+			System.out.println(c.getName());
+			if(c.getType().toString().equalsIgnoreCase("Stick")) {
+				return c;
+			}
+		}
+		
+		return null;
 	}
 }

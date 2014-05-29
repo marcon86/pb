@@ -1,5 +1,6 @@
 package compactController;
 
+import java.awt.Point;
 import java.awt.Rectangle;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -259,52 +260,70 @@ public class ControlGui {
 		optionContainer = new JPanel();
 		optionContainer.setLayout(null);
 		
-		/*
-		 * Usb Device
-		 */
+		/* Usb Device */
+//		addOptionFieldBlock(new Point(75,15), "Controller in use: ", new ActionListener() {
+//			public void actionPerformed(ActionEvent arg0) {
+//				deviceComboRefresh();				
+//			}
+//		});
+//		deviceComboRefresh();
+		
+		Point vertice = new Point(75,15); // 75,15
+		String label = "Controller in use: ";
+		ActionListener dropdownCallback = new ActionListener() {
+			public void actionPerformed(ActionEvent arg0) {
+				deviceComboRefresh();				
+			}
+		};
+		
 		deviceRefreshButton = new JButton();
-		deviceRefreshButton.setBounds(new Rectangle(55,40,13,13));
+		deviceRefreshButton.setBounds(new Rectangle(((int)vertice.getX()-20),((int)vertice.getY()+25),13,13)); // -20,25
 /////////////////////////		
 		deviceRefreshButton.setEnabled(false);
 /////////////////////////
 		deviceRefreshButton.setIcon(new ImageIcon(getClass().getResource("/resources/refresh.png")));
-		deviceRefreshButton.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent arg0) {
-				deviceComboRefresh();				
-			}
-		});			
-		
+		deviceRefreshButton.addActionListener(dropdownCallback);
+
 		deviceStatus = new JLabel(new ImageIcon(getClass().getResource("/resources/status_off_18.png")));
-		deviceStatus.setBounds(new Rectangle(310,35,18,18));
+		deviceStatus.setBounds(new Rectangle(((int)vertice.getX()+235),((int)vertice.getY()+20),18,18)); // 235,20
 		
-		deviceLabel = new JLabel("Controller in use: ");
-		deviceLabel.setBounds(new Rectangle(75, 15, 270, 16));
+		deviceLabel = new JLabel(label);
+		deviceLabel.setBounds(new Rectangle(((int)vertice.getX()), ((int)vertice.getY()), 270, 16)); // 0,0
 		deviceCombo = new JComboBox();
-		deviceCombo.setBounds(new Rectangle(75, 35, 226, 22));
+		deviceCombo.setBounds(new Rectangle(((int)vertice.getX()), ((int)vertice.getY()+20), 226, 22)); // 0,20
 		deviceComboRefresh();
 		
-		/*
-		 * Midi Out
-		 */
-		midiRefreshButton = new JButton();
-		midiRefreshButton.setBounds(new Rectangle(55,115,13,13));
-		midiRefreshButton.setIcon(new ImageIcon(getClass().getResource("/resources/refresh.png")));
-		midiRefreshButton.addActionListener(new ActionListener() {
+		/* Midi Out */
+//		addOptionFieldBlock(new Point(75,90), "Send midi to: ", new ActionListener() {
+//			public void actionPerformed(ActionEvent arg0) {
+//				midiComboRefresh();				
+//			}
+//		});	
+//		midiComboRefresh();
+
+		vertice = new Point(75,90); // 75, 90
+		label = "Send midi to: ";
+		dropdownCallback = new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
 				midiComboRefresh();				
 			}
-		});	
+		};
+
+		midiRefreshButton = new JButton();
+		midiRefreshButton.setBounds(new Rectangle(((int)vertice.getX()-20),((int)vertice.getY()+25),13,13));
+		midiRefreshButton.setIcon(new ImageIcon(getClass().getResource("/resources/refresh.png")));
+		midiRefreshButton.addActionListener(dropdownCallback);	
 		
 		midiStatus = new JLabel(new ImageIcon(getClass().getResource("/resources/status_off_18.png")));
-		midiStatus.setBounds(new Rectangle(310,110,18,18));
+		midiStatus.setBounds(new Rectangle(((int)vertice.getX()+235),((int)vertice.getY()+20),18,18));
 
-		midiLabel = new JLabel("Send midi to: ");
-		midiLabel.setBounds(new Rectangle(75, 90, 270, 16));
+		midiLabel = new JLabel(label);
+		midiLabel.setBounds(new Rectangle(((int)vertice.getX()), ((int)vertice.getY()), 270, 16));
 
 		midiCombo = new JComboBox();
-		midiCombo.setBounds(new Rectangle(75, 110, 226, 22));
-
+		midiCombo.setBounds(new Rectangle(((int)vertice.getX()), ((int)vertice.getY()+20), 226, 22));
 		midiComboRefresh(); // primo controllo
+		
 		
 		/*
 		 * Buttons
@@ -375,6 +394,28 @@ public class ControlGui {
 		//background
 		optionContainer.add(backgroundLabel);
 
+	}
+
+	private void addOptionFieldBlock(Point vertice, String label,
+			ActionListener dropdownCallback) {
+		deviceRefreshButton = new JButton();
+		deviceRefreshButton.setBounds(new Rectangle(((int)vertice.getX()-20),((int)vertice.getY()+25),13,13)); // -20,25
+/////////////////////////		
+		deviceRefreshButton.setEnabled(false);
+/////////////////////////
+		deviceRefreshButton.setIcon(new ImageIcon(getClass().getResource("/resources/refresh.png")));
+		deviceRefreshButton.addActionListener(dropdownCallback);
+			
+		
+		
+		deviceStatus = new JLabel(new ImageIcon(getClass().getResource("/resources/status_off_18.png")));
+		deviceStatus.setBounds(new Rectangle(((int)vertice.getX()+235),((int)vertice.getY()+20),18,18)); // 235,20
+		
+		deviceLabel = new JLabel(label);
+		deviceLabel.setBounds(new Rectangle(((int)vertice.getX()), ((int)vertice.getY()), 270, 16)); // 0,0
+		deviceCombo = new JComboBox();
+		deviceCombo.setBounds(new Rectangle(((int)vertice.getX()), ((int)vertice.getY()+20), 226, 22)); // 0,20
+//		deviceComboRefresh();
 	}
 
 	private void initMainContainer() {
@@ -505,7 +546,7 @@ public class ControlGui {
 				if(MidiSystem.getMidiDevice(midi[i]).getMaxReceivers() != 0){
 					midiCombo.addItem(midi[i].getName());
 				}
-			} catch (MidiUnavailableException e) {	}
+			} catch (MidiUnavailableException e) { System.err.println(e);}
 		}
 	}
 	
@@ -519,15 +560,12 @@ public class ControlGui {
 		app.setContentPane(mainContainer);
 		app.setTitle("Stomp Controller");
 		app.setResizable(false);
-
 		
 		workerThread = new PedalController2(button,toggle,reset,resetMask);
 
 		load();
 
 		workerThread.start();
-		
-
 
 		return app;
 	}
