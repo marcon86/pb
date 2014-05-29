@@ -1,4 +1,4 @@
-package compactController;
+package org.pb.compactcontroller.hid;
 
 import javax.sound.midi.InvalidMidiDataException;
 import javax.sound.midi.MidiDevice;

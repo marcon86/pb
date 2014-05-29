@@ -1,4 +1,4 @@
-package compactController;
+package org.pb.compactcontroller.gui;
 
 import java.awt.Point;
 import java.awt.Rectangle;
@@ -29,6 +29,8 @@ import javax.swing.KeyStroke;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
+
+import org.pb.compactcontroller.hid.PedalController2;
 
 import net.java.games.input.ControllerEnvironment;
 

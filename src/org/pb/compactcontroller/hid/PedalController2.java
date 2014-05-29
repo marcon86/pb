@@ -1,4 +1,4 @@
-package compactController;
+package org.pb.compactcontroller.hid;
 
 import java.util.Vector;
 
